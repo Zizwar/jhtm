@@ -1,0 +1,38 @@
+{
+    "name": "jhtm",
+    "version": "0.7.0",
+    "description": "JavaScript HTML Template Manager for browser and Node.js",
+    "main": "jhtm.js",
+    "module": "jhtm.js",
+    "exports": {
+      ".": {
+        "require": "./jhtm.js",
+        "import": "./jhtm.js"
+      }
+    },
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+      "html",
+      "template",
+      "javascript",
+      "browser",
+      "node"
+    ],
+    "author": "brahim BIDI",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/zizwar/jhtm.git"
+    },
+    "bugs": {
+      "url": "https://github.com/zizwar/jhtm/issues"
+    },
+    "homepage": "https://github.com/zizwar/jhtm#readme",
+    "dependencies": {},
+    "devDependencies": {},
+    "engines": {
+      "node": ">=12.0.0"
+    }
+  }
