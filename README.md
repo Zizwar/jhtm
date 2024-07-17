@@ -22,7 +22,7 @@ npm install jhtm
 ### In Browser
 
 ```html
-<script src="path/to/jhtm.js"></script>
+<script src="https://unpkg.com/jhtm"></script>
 <script>
   const jhtm = new JHTM('/template.html', '/data.json'/*or "https://exemple.com/feed.json"*/, { cacheTemplate: true });
   jhtm.render().then(result => {
