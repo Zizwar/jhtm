@@ -1,38 +1,69 @@
 {
-    "name": "jhtm",
-    "version": "0.7.0",
-    "description": "JavaScript HTML Template Manager for browser and Node.js",
-    "main": "jhtm.js",
-    "module": "jhtm.js",
-    "exports": {
-      ".": {
-        "require": "./jhtm.js",
-        "import": "./jhtm.js"
-      }
-    },
-    "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "keywords": [
-      "html",
-      "template",
-      "javascript",
-      "browser",
-      "node"
-    ],
-    "author": "brahim BIDI",
-    "license": "MIT",
-    "repository": {
-      "type": "git",
-      "url": "https://github.com/zizwar/jhtm.git"
-    },
-    "bugs": {
-      "url": "https://github.com/zizwar/jhtm/issues"
-    },
-    "homepage": "https://github.com/zizwar/jhtm#readme",
-    "dependencies": {},
-    "devDependencies": {},
-    "engines": {
-      "node": ">=12.0.0"
+  "name": "jhtm",
+  "version": "2.0.1",
+  "description": "JavaScript HTML Template Manager - خفيف، سريع، وآمن للمتصفح و Node.js",
+  "main": "jhtm.js",
+  "module": "jhtm.js",
+  "types": "jhtm.d.ts",
+  "exports": {
+    ".": {
+      "require": "./jhtm.js",
+      "import": "./jhtm.js",
+      "types": "./jhtm.d.ts"
     }
-  }
+  },
+  "scripts": {
+    "test": "node test/test.js",
+    "build": "echo 'No build step needed'",
+    "prepublishOnly": "npm test"
+  },
+  "keywords": [
+    "html",
+    "template",
+    "templating",
+    "javascript",
+    "browser",
+    "node",
+    "lightweight",
+    "fast",
+    "secure",
+    "xss-safe",
+    "conditionals",
+    "loops",
+    "nested-properties",
+    "cache",
+    "arabic"
+  ],
+  "author": {
+    "name": "brahim BIDI",
+    "email": "brahim@example.com",
+    "url": "https://github.com/zizwar"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zizwar/jhtm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zizwar/jhtm/issues",
+    "email": "brahim@example.com"
+  },
+  "homepage": "https://github.com/zizwar/jhtm#readme",
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "files": [
+    "jhtm.js",
+    "jhtm.d.ts",
+    "README.md",
+    "LICENSE",
+    "EXAMPLES.md"
+  ],
+  "browser": {
+    "jhtm.js": "./jhtm.js"
+  },
+  "unpkg": "jhtm.js",
+  "jsdelivr": "jhtm.js"
+}
