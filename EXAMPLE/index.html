@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>اختبار JHTM بسيط</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .header { background: #4CAF50; color: white; padding: 20px; }
+        pre { background: #f4f4f4; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>اختبار JHTM - @include</h1>
+
+    <div id="app">جاري التحميل...</div>
+
+    <h2>السجل:</h2>
+    <pre id="log"></pre>
+
+    <script src="../jhtm.js"></script>
+    <script>
+        const logDiv = document.getElementById('log');
+        function log(msg) {
+            console.log(msg);
+            logDiv.textContent += msg + '\n';
+        }
+
+        log('1. بدء التحميل...');
+
+        const jhtm = new JHTM('template.html', 'data.json', {
+            templateBasePath: './partials',
+            cacheTemplate: false,
+            cacheData: false
+        });
+
+        log('2. تم إنشاء JHTM');
+
+        jhtm.render()
+            .then(result => {
+                log('3. نجح render()');
+                log('4. طول النتيجة: ' + result.length);
+
+                // فحص @include
+                if (result.includes('@include')) {
+                    log('⚠️ خطأ: @include لا يزال موجود!');
+                } else {
+                    log('✅ @include تمت معالجته');
+                }
+
+                // فحص النص
+                if (result.includes('هذا الهيدر من ملف خارجي')) {
+                    log('✅ تم جلب header.html');
+                } else {
+                    log('❌ لم يتم جلب header.html');
+                }
+
+                document.getElementById('app').innerHTML = result;
+            })
+            .catch(error => {
+                log('❌ خطأ: ' + error.message);
+                log('Stack: ' + error.stack);
+                document.getElementById('app').innerHTML =
+                    '<div style="color:red">' + error.message + '</div>';
+            });
+    </script>
+</body>
+</html>

@@ -448,12 +448,36 @@
           this.loadTemplate(),
           this.loadData()
         ]);
-        
-        // معالجة التضمينات أولاً
-        const templateWithIncludes = await this.processIncludes(template, data);
-        
-        const rendered = this.renderTemplate(templateWithIncludes, data);
-        return await this.handleExternalResources(rendered);
+
+        // معالجة التضمينات والحلقات بشكل متكرر
+        let processed = template;
+        let maxIterations = 5; // الحد الأقصى لتجنب الحلقات اللانهائية
+
+        for (let i = 0; i < maxIterations; i++) {
+          // معالجة التضمينات أولاً
+          const withIncludes = await this.processIncludes(processed, data);
+
+          // معالجة الحلقات ثم الشروط (الترتيب مهم!)
+          const withLoops = this.processLoops(withIncludes, data);
+          const withConditions = this.processConditionals(withLoops, data);
+
+          // إذا لم تتغير النتيجة، نكون انتهينا
+          if (withConditions === processed) {
+            processed = withConditions;
+            break;
+          }
+
+          processed = withConditions;
+        }
+
+        // معالجة التضمينات المتبقية بعد توسيع الحلقات
+        processed = await this.processIncludes(processed, data);
+
+        // معالجة المتغيرات النهائية
+        processed = this.renderRawVariables(processed, data);
+        processed = this.renderSimpleVariables(processed, data);
+
+        return await this.handleExternalResources(processed);
       } catch (error) {
         console.error('JHTM Render Error:', error);
         throw error;
