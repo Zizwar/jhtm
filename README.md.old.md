@@ -373,7 +373,15 @@ await jhtm.update({ name: 'محمد', age: 25 });
 
 MIT License
 
+## 🤝 المساهمة
 
+نرحب بالمساهمات! يرجى فتح issue أو pull request على GitHub.
+
+## 📞 التواصل
 
 - GitHub: [zizwar/jhtm](https://github.com/zizwar/jhtm)
 - Issues: [Report Bug](https://github.com/zizwar/jhtm/issues)
+
+---
+
+صُنع بـ ❤️ من أجل مجتمع المطورين
