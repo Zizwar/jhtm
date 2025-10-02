@@ -216,23 +216,104 @@
       });
     }
 
+    // إيجاد حلقة @each مطابقة (مع دعم التداخل)
+    findMatchingLoop(template, startPos) {
+      const eachStart = /@each\(/g;
+      const eachEnd = /@endeach/g;
+
+      eachStart.lastIndex = startPos;
+      const match = eachStart.exec(template);
+      if (!match) return null;
+
+      let depth = 1;
+      let pos = eachStart.lastIndex;
+
+      while (depth > 0 && pos < template.length) {
+        const nextEach = template.indexOf('@each(', pos);
+        const nextEnd = template.indexOf('@endeach', pos);
+
+        if (nextEnd === -1) return null; // لا يوجد @endeach مطابق
+
+        if (nextEach !== -1 && nextEach < nextEnd) {
+          depth++;
+          pos = nextEach + 6; // طول '@each('
+        } else {
+          depth--;
+          if (depth === 0) {
+            return {
+              start: match.index,
+              end: nextEnd + 8, // طول '@endeach'
+              fullMatch: template.substring(match.index, nextEnd + 8)
+            };
+          }
+          pos = nextEnd + 8;
+        }
+      }
+
+      return null;
+    }
+
     // معالجة الحلقات: @each(items as item)...@endeach
     processLoops(template, data) {
-      return template.replace(/@each\((\w+(?:\.\w+)*)\s+as\s+(\w+)\)([\s\S]*?)@endeach/g, 
-        (match, arrayPath, itemName, content) => {
-          try {
-            const array = this.getNestedValue(data, arrayPath);
-            if (!Array.isArray(array)) return '';
-            
-            return array.map((item, index) => {
-              const itemData = { ...data, [itemName]: item, index, first: index === 0, last: index === array.length - 1 };
-              return this.renderSimpleVariables(content, itemData);
-            }).join('');
-          } catch (error) {
-            console.warn('Loop error:', error);
-            return '';
+      let result = template;
+
+      while (true) {
+        const loopInfo = this.findMatchingLoop(result, 0);
+        if (!loopInfo) break;
+
+        const fullMatch = loopInfo.fullMatch;
+        const headerMatch = fullMatch.match(/@each\((\w+(?:\.\w+)*)\s+as\s+(\w+)\)/);
+        if (!headerMatch) {
+          result = result.replace(fullMatch, '');
+          continue;
+        }
+
+        const [, arrayPath, itemName] = headerMatch;
+        const content = fullMatch.substring(
+          headerMatch[0].length,
+          fullMatch.length - 8 // -'@endeach'.length
+        );
+
+        try {
+          const array = this.getNestedValue(data, arrayPath);
+          if (!Array.isArray(array)) {
+            result = result.replace(fullMatch, '');
+            continue;
           }
-        });
+
+          const rendered = array.map((item, index) => {
+            const itemData = {
+              ...data,
+              [itemName]: item,
+              index,
+              first: index === 0,
+              last: index === array.length - 1
+            };
+
+            let itemContent = content;
+
+            // معالجة الحلقات المتداخلة
+            if (/@each\(/.test(itemContent)) {
+              itemContent = this.processLoops(itemContent, itemData);
+            }
+
+            // معالجة الشروط
+            itemContent = this.processConditionals(itemContent, itemData);
+
+            // معالجة المتغيرات
+            itemContent = this.renderSimpleVariables(itemContent, itemData);
+
+            return itemContent;
+          }).join('');
+
+          result = result.replace(fullMatch, rendered);
+        } catch (error) {
+          console.warn('Loop error:', error);
+          result = result.replace(fullMatch, '');
+        }
+      }
+
+      return result;
     }
 
     // تقييم تعبير بسيط بشكل آمن
