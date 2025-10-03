@@ -1,6 +1,6 @@
 // test.js - اختبارات بسيطة لـ JHTM v2.0
 
-const JHTM = require('./jhtm.js');
+const JHTM = require('../jhtm.js');
 
 // ألوان للطباعة
 const colors = {

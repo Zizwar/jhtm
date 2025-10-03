@@ -45,9 +45,18 @@
       let template;
       try {
         if (typeof this.templateUrl === 'string') {
-          const response = await fetch(this.templateUrl);
-          if (!response.ok) throw new Error(`Failed to load template: ${response.status}`);
-          template = await response.text();
+          // إذا لم يكن URL، اعتبره محتوى القالب مباشرة
+          if (!(/^https?:\/\/|^\/|^\.\//.test(this.templateUrl))) {
+            template = this.templateUrl;
+          } else if (typeof fetch === 'function') {
+            const response = await fetch(this.templateUrl);
+            if (!response.ok) throw new Error(`Failed to load template: ${response.status}`);
+            template = await response.text();
+          } else {
+            // Fallback for Node.js environment if fetch is not available
+            const fs = require('fs').promises;
+            template = await fs.readFile(this.templateUrl, 'utf8');
+          }
         } else if (typeof this.templateUrl === 'function') {
           template = await this.templateUrl();
         } else {
@@ -318,39 +327,49 @@
 
     // تقييم تعبير بسيط بشكل آمن
     evaluateExpression(expr, data) {
-      // دعم العمليات البسيطة فقط لتجنب eval
       expr = expr.trim();
-      
-      // مقارنات بسيطة: value === 'string', value > 5, !value
-      const comparison = /^(!?)(\w+(?:\.\w+)*)\s*(===|!==|>|<|>=|<=)?\s*(.+)?$/;
-      const match = expr.match(comparison);
-      
-      if (match) {
-        const [, not, path, operator, rawValue] = match;
+
+      // الحالة 1: مقارنة كاملة (e.g., "age >= 18")
+      const comparisonRegex = /^(!?)(\w+(?:\.\w+)*)\s*(===|!==|>=|<=|>|<)\s*(.+)$/;
+      const comparisonMatch = expr.match(comparisonRegex);
+
+      if (comparisonMatch) {
+        const [, not, path, operator, rawValue] = comparisonMatch;
         let value = this.getNestedValue(data, path);
         
-        if (not) value = !value;
-        if (!operator) return !!value;
-        
-        // تحويل القيمة المقارنة
         let compareValue = rawValue?.trim();
         if (compareValue === 'true') compareValue = true;
         else if (compareValue === 'false') compareValue = false;
         else if (compareValue === 'null') compareValue = null;
-        else if (!isNaN(compareValue)) compareValue = Number(compareValue);
-        else compareValue = compareValue.replace(/^['"]|['"]$/g, ''); // إزالة علامات التنصيص
-        
-        switch (operator) {
-          case '===': return value === compareValue;
-          case '!==': return value !== compareValue;
-          case '>': return value > compareValue;
-          case '<': return value < compareValue;
-          case '>=': return value >= compareValue;
-          case '<=': return value <= compareValue;
-          default: return false;
+        else if (!isNaN(Number(compareValue)) && compareValue !== '' && !compareValue.includes(' ')) {
+          compareValue = Number(compareValue);
+        } else {
+          compareValue = compareValue.replace(/^['\"]|['\"]$/g, '');
         }
+
+        let result;
+        switch (operator) {
+          case '===': result = value === compareValue; break;
+          case '!==': result = value !== compareValue; break;
+          case '>': result = value > compareValue; break;
+          case '<': result = value < compareValue; break;
+          case '>=': result = value >= compareValue; break;
+          case '<=': result = value <= compareValue; break;
+          default: result = false;
+        }
+        return not ? !result : result;
       }
-      
+
+      // الحالة 2: متغير بولياني بسيط (e.g., "isActive", "!user.active")
+      const booleanRegex = /^(!?)(\w+(?:\.\w+)*)$/;
+      const booleanMatch = expr.match(booleanRegex);
+
+      if (booleanMatch) {
+        const [, not, path] = booleanMatch;
+        const value = this.getNestedValue(data, path);
+        return not ? !value : !!value;
+      }
+
       return false;
     }
 
@@ -448,12 +467,36 @@
           this.loadTemplate(),
           this.loadData()
         ]);
-        
-        // معالجة التضمينات أولاً
-        const templateWithIncludes = await this.processIncludes(template, data);
-        
-        const rendered = this.renderTemplate(templateWithIncludes, data);
-        return await this.handleExternalResources(rendered);
+
+        // معالجة التضمينات والحلقات بشكل متكرر
+        let processed = template;
+        let maxIterations = 5; // الحد الأقصى لتجنب الحلقات اللانهائية
+
+        for (let i = 0; i < maxIterations; i++) {
+          // معالجة التضمينات أولاً
+          const withIncludes = await this.processIncludes(processed, data);
+
+          // معالجة الحلقات ثم الشروط (الترتيب مهم!)
+          const withLoops = this.processLoops(withIncludes, data);
+          const withConditions = this.processConditionals(withLoops, data);
+
+          // إذا لم تتغير النتيجة، نكون انتهينا
+          if (withConditions === processed) {
+            processed = withConditions;
+            break;
+          }
+
+          processed = withConditions;
+        }
+
+        // معالجة التضمينات المتبقية بعد توسيع الحلقات
+        processed = await this.processIncludes(processed, data);
+
+        // معالجة المتغيرات النهائية
+        processed = this.renderRawVariables(processed, data);
+        processed = this.renderSimpleVariables(processed, data);
+
+        return await this.handleExternalResources(processed);
       } catch (error) {
         console.error('JHTM Render Error:', error);
         throw error;
